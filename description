@@ -1,0 +1,17 @@
+echo hello world
+
+echo [echo hello] world
+
+set x 5
+
+echo [set x]
+
+echo hi; echo world
+
+set func {echo hi}
+
+func
+
+block{ Type: Closure }
+
+Evaluate("set x 3; x") == "3"

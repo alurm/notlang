@@ -1,0 +1,1 @@
+let-set fac {if [= 0 [get 0]] {value 1} {* [get 0] [fac [- [get 0] 1]]}}; fac 10
