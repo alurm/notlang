@@ -1,0 +1,33 @@
+2023 8 28 3:07
+
+maybe argv[0] is needed for UNIX compat
+	currently []Value is passed without head
+wanted to do
+	builtins[String("let-set")] = Ptr(MakeClosure("let [get 0]; set [get 0] [get 1]"))
+	but realized that it won't work since let will create binding in wrong frame
+	can't do [
+		let-set f [up {frame}]
+		let-frame [get f] [get 0]
+		set-frame [get f] [get 0] [get 1]
+	] since {frame} is a closure and they don't accept frame
+	needs dynamic scoping like "this"
+
+	maybe () to not create frame?
+
+	let let-set
+	set let-set (
+		let [get 0]
+		set [get 0] [get 1]
+	)
+	let-set
+
+	let let2
+	set let2 {
+
+	}
+	[
+		let2 foo
+	]
+	set foo 3 # Must halt.
+
+	import # Also introduces bindings...

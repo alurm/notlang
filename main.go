@@ -112,19 +112,17 @@ func ParseTop(tokens []Token) SyntaxBlock {
 	return b
 }
 
-type Value interface{ Value() }
+type (
+	Value     interface{ Value() }
+	Closure   func([]Value) Value
+	Primitive func([]Value, *Frame) Value
+)
 
-/*type Closure struct {
-	Frame    *Frame
-	Function func([]Value, *Frame) Value
-}*/
+func (String) Value()    {}
+func (Closure) Value()   {}
+func (Primitive) Value() {}
 
-type Closure func([]Value) Value
-
-func (String) Value()  {}
-func (Closure) Value() {}
-
-func BuiltinPrint(values []Value) Value {
+func BuiltinPrint(values []Value, _ *Frame) Value {
 	var result String
 	for i, v := range values {
 		if i != 0 {
@@ -188,16 +186,6 @@ func CallStatementValue(values []Value, f *Frame) Value {
 			return CallStatementValue(values, f)
 		}
 		switch head {
-		case "print":
-			return BuiltinPrint(tail)
-		case "let":
-			return BuiltinLet(tail, f)
-		case "get":
-			return BuiltinGet(tail, f)
-		case "set":
-			return BuiltinSet(tail, f)
-		case "value":
-			return tail[0]
 		case "let-set":
 			BuiltinLet(tail, f)
 			return BuiltinSet(tail, f)
@@ -251,6 +239,8 @@ func CallStatementValue(values []Value, f *Frame) Value {
 		result := head(tail)
 		//Print(result)
 		return result
+	case Primitive:
+		return head(tail, f)
 	default:
 		panic("Not implemented")
 	}
@@ -325,6 +315,27 @@ func Print(v Value) {
 	fmt.Println(s)
 }
 
+func Ptr[T any](value T) *T { return &value }
+
+func MakeClosure(source string, f *Frame) Value {
+	out, _ := Parse(Tokenize(source), false)
+	return Evaluate(out, f)
+}
+
+func Builtins() map[String]*Value {
+	builtins := map[String]*Value{
+		"print": Ptr(Value(Primitive(BuiltinPrint))),
+		"let":   Ptr(Value(Primitive(BuiltinLet))),
+		"get":   Ptr(Value(Primitive(BuiltinGet))),
+		"set":   Ptr(Value(Primitive(BuiltinSet))),
+		"value": Ptr(Value(Primitive(func(v []Value, _ *Frame) Value {
+			return v[0]
+		}))),
+	}
+	//builtins[String("let-set")] = Ptr(MakeClosure(""))
+	return builtins
+}
+
 func main() {
 	tokens := Tokenize(
 		//"print hi world,  good",
@@ -340,5 +351,9 @@ func main() {
 	//fmt.Printf("%+v\n", syntax)
 	//fmt.Println()
 	//fmt.Printf("%#v\n", Evaluate(syntax, nil))
-	Print(Evaluate(syntax, nil))
+	value := Evaluate(
+		syntax,
+		&Frame{Up: nil, Names: Builtins()},
+	)
+	Print(value)
 }

@@ -1,0 +1,6 @@
+2023 8 28 2 32 add builtins as values
+	already have closures, can reuse
+	need to give proper frame to top main.go:/^func Evaluate/ and
+	make builtins functions
+
+	status: in progress
