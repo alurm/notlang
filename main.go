@@ -52,7 +52,7 @@ func Tokenize(input string) (out []Token) {
 			var s string
 			special := func(input byte) bool {
 				switch input {
-				case ' ', ';', '[', ']', '{', '}':
+				case ' ', ';', '[', ']', '{', '}', '\n':
 					return true
 				default:
 					return false
@@ -268,7 +268,9 @@ func Evaluate(n SyntaxNode, f *Frame) Value {
 		if n.Call {
 			var v Value
 			for _, s := range n.Statements {
-				v = EvaluateStatement(s, f)
+				if len(s) != 0 {
+					v = EvaluateStatement(s, f)
+				}
 			}
 			return v
 		} else {
@@ -343,9 +345,10 @@ func main() {
 	)
 	//tokens := Tokenize("echo hello world; echo [echo good]")
 	//tokens := Tokenize("[foo] hello world [good]")
-	/*for _, token := range tokens {
+	for _, token := range tokens {
 		//fmt.Printf("%#v\n", token)
-	}*/
+		_ = token
+	}
 	//fmt.Println()
 	syntax := ParseTop(tokens)
 	//fmt.Printf("%+v\n", syntax)
