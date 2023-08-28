@@ -37,7 +37,7 @@ func Tokenize(input string) (out []Token) {
 	var i int
 	for i < len(input) {
 		switch b := input[i]; b {
-		case ' ':
+		case ' ', '\t':
 			i++
 		case ';', '\n': // Hack.
 			out = append(out, Semicolon{})
@@ -52,7 +52,7 @@ func Tokenize(input string) (out []Token) {
 			var s string
 			special := func(input byte) bool {
 				switch input {
-				case ' ', ';', '[', ']', '{', '}', '\n':
+				case ' ', '\t', ';', '[', ']', '{', '}', '\n':
 					return true
 				default:
 					return false
