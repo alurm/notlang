@@ -227,12 +227,21 @@ func CallStatementValue(values []Value, f *Frame) Value {
 				return otherwise([]Value{})
 			}
 		case "=":
-			l := tail[0].(String)
-			r := tail[1].(String)
-			if l == r {
-				return String("yes")
+			switch l := tail[0].(type) {
+			case String:
+				r, ok := tail[1].(String)
+				if !ok {
+					return String("")
+				}
+				if l == r {
+					return String("yes")
+				}
+				return String("")
+			case Closure:
+				return String("")
+			default:
+				panic(nil)
 			}
-			return String("")
 		default:
 			panic("Not implemented: " + string(head))
 		}
