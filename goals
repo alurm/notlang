@@ -4,3 +4,13 @@
 	make builtins functions
 
 	status: in progress
+
+2023 8 29 make builtins more transparent
+	[let-set x 3] is too convenient
+	other ideas: pass [here] frame explicitly: [let-set [here] x 3]
+		verbose
+	call without creating a new frame: (let-set x 3)
+		toplevel problem, should it default to [] or ()
+		probably (). then wrap in "value [...]" all blocks, which is hmm
+		alternatively, default to [] but make set work for globals
+		[set foo 3]
