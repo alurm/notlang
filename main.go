@@ -130,6 +130,7 @@ func BuiltinPrint(values []Value, _ *Frame) Value {
 		}
 		result += v.(String)
 	}
+	Print(result)
 	return result
 }
 
@@ -213,6 +214,8 @@ func CallStatementValue(values []Value, f *Frame) Value {
 			return String(strconv.Itoa(li + 1))
 		case "empty":
 			return String("")
+		case "panic":
+			panic(nil)
 		case "if":
 			//f := &Frame{Up: f, Names: map[String]*Value{}}
 			cond := tail[0].(String)
@@ -281,6 +284,7 @@ func Evaluate(n SyntaxNode, f *Frame) Value {
 					Names: map[String]*Value{},
 				}
 				for i, v := range args {
+					v := v
 					f.Names[String(strconv.Itoa(i))] = &v
 				}
 				asCall := n
