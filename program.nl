@@ -27,9 +27,7 @@ print hello, world
 
 let-set pair {
 	let-set left [get 0]
-	empty print left: [get left]
 	let-set right [get 1]
-	empty print right: [get right]
 	value {
 		if [= [get 0] left] {
 			get left
@@ -77,3 +75,6 @@ let-set map {
 print
 
 iter [map [get list] {+ [get 0] [get 0]}] [get print]
+
+let-set e {}
+let-set e2 []
