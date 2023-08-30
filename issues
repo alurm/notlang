@@ -1,0 +1,79 @@
+# 2023 8 30
+
+## Calls are syntactically hard to change to closures and vise versa
+
+	Need to change two characters (beginning and end tokens) to swap.
+	Have to remember right tokens.
+	Scheme got away with () because of lambda special form:
+
+		map [get list] [lambda + [get 0] [get 0]]
+
+	Special forms are basically part of syntax in Scheme. It's literally "lambda".
+
+	One way to fix is to use "end" as ending token.
+	Another way: foo[] syntax. Clashes with string concatenation in shells.
+
+## Make tokenizer concatenate [...]... cases
+
+	Currently [...]... is treated as [...] ..., which is not correct.
+	It's simple, however.
+	concat[...]... as a workaround.
+
+## Extensible bindings
+
+	It's not possible for callee to create bindings in the caller's scope currently.
+	Therefore, it's not possible to implement, say, custom import statement.
+	At least one built-in is needed.
+
+	let-set fmt [import fmt]
+	let-set-pairs a [fmt a] b [fmt b] c [fmt c]
+
+	fmt print
+	fmt get print
+	fmt
+
+	A.
+
+## Expose eval
+
+## Let without rec (not letrec)
+
+	Currently frames names are maps. It's not possible to shadow a binding:
+
+		let foo {value 5}
+		let foo {+ 5 [foo]} # Doesn't work
+
+# Inject values during closure definition
+
+	One solution to let without rec is to allow early binding values in closure
+
+	One possible syntax:
+
+		let foo {value 5}
+
+		let foo {+ 5 (get foo)} # Calls get foo in the closure during definition
+
+	Use cases:
+	- weirdly solves let without rec problem
+
+## Add comments?
+
+## Extensible namespaces
+
+	Currently namespaces suffer need of "get"
+
+	fmt print bla
+
+	[get fmt print] # Can't cause no abstraction for maps.
+
+	[get fmt] get print
+
+	fmt get print # Seems ad-hoc (convention). What if fmt wants own get?
+
+	fmt -get print
+
+## Reflection
+
+	There is currently no way to know what a closure is. Not even identity.
+
+	Metadata support like in Clojure might be nice.
