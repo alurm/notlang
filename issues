@@ -77,3 +77,9 @@
 	There is currently no way to know what a closure is. Not even identity.
 
 	Metadata support like in Clojure might be nice.
+
+## Export closure as temporary file
+
+	It would be a great feature to allow exporting closures as files.
+
+	Not sure that langugage is static enough to allow for that.
