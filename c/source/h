@@ -1,0 +1,35 @@
+typedef enum {
+	token_tag_string,
+	token_tag_separator,
+	token_tag_bracket
+} token_tag;
+
+typedef struct {
+	int value;
+} bool;
+
+typedef struct {
+	bool open;
+	bool square;
+} token_bracket;
+
+typedef struct {
+	int length;
+	char *value;
+} string;
+
+typedef union {
+	string string;
+	token_bracket bracket;
+} token_union;
+
+typedef struct {
+	token_tag tag;
+	token_union u;
+} token;
+
+typedef struct {
+	int length;
+	int capacity;
+	token *value;
+} tokens;
