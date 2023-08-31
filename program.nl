@@ -68,7 +68,11 @@ let-set map {
 	if [= [get list] end] {
 		value end
 	} {
-		pair [func [list left]] [map [list right] [get func]]
+		pair [
+			func [list left]
+		] [
+			map [list right] [get func]
+		]
 	}
 }
 
