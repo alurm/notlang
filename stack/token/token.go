@@ -25,11 +25,9 @@ type (
 	Open      struct{}
 	Close     struct{}
 	Quote     struct{}
+	Backslash struct{}
 )
 
-/*
-for (i in String Dollar Space Separator Open Close Quote) echo 'func ('$i') token() {}'
-*/
 func (String) token()    {}
 func (Dollar) token()    {}
 func (Space) token()     {}
@@ -37,6 +35,7 @@ func (Separator) token() {}
 func (Open) token()      {}
 func (Close) token()     {}
 func (Quote) token()     {}
+func (Backslash) token() {}
 
 func Tokenize(in chan byte) chan Token {
 	// in := bufio.NewReader(r)
@@ -89,13 +88,20 @@ func Tokenize(in chan byte) chan Token {
 				out <- Dollar{}
 			case '\'':
 				out <- Quote{}
+			case '\\':
+				b, ok := <-in
+				if !ok {
+					out <- String("\\")
+				} else {
+					out <- String(b)
+				}
 			default:
 				var sb strings.Builder
 			Word:
 				for {
 					var ok bool
 					switch b {
-					case ' ', '\t', ';', '\n', '[', ']', '$':
+					case ' ', '\t', ';', '\n', '[', ']', '$', '\\':
 						peeked = true
 						peek = b
 						break Word
