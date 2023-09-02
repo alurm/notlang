@@ -7,3 +7,8 @@ type (
 	Block    []Command // $[echo hi; echo lol]
 	Function []Command // [echo hi; echo lol]
 )
+
+func (String) tree()   {}
+func (Command) tree()  {}
+func (Block) tree()    {}
+func (Function) tree() {}
