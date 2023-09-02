@@ -36,7 +36,7 @@ func Shell() {
 			out <- b
 		}
 	}()
-	for t := range parse.SpaceTop(parse.GroupTop(tokens)) {
+	for t := range parse.CommandTop(parse.SpaceTop(parse.GroupTop(tokens))) {
 		fmt.Printf("%#v\n", t)
 	}
 }
