@@ -25,7 +25,7 @@ type (
 	Open      struct{}
 	Close     struct{}
 	Quote     struct{}
-	Backslash struct{}
+	// Backslash // Not a token, but a special character anyway.
 )
 
 func (String) token()    {}
@@ -35,7 +35,6 @@ func (Separator) token() {}
 func (Open) token()      {}
 func (Close) token()     {}
 func (Quote) token()     {}
-func (Backslash) token() {}
 
 func Tokenize(in chan byte) chan Token {
 	// in := bufio.NewReader(r)
