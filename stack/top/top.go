@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"git.sr.ht/~alurm/notlang/stack/parse"
 	"git.sr.ht/~alurm/notlang/stack/token"
 )
 
@@ -35,7 +36,7 @@ func Shell() {
 			out <- b
 		}
 	}()
-	for t := range tokens {
+	for t := range parse.GroupTop(tokens) {
 		fmt.Printf("%#v\n", t)
 	}
 }
