@@ -138,7 +138,7 @@ func Tokenize(in chan byte) chan Token {
 				for {
 					var ok bool
 					switch b {
-					case ' ', '\t', ';', '\n', '[', ']', '$', '\\':
+					case ' ', '\t', ';', '\n', '[', ']', '$', '\'', '\\':
 						peeked = true
 						peek = b
 						break Word
