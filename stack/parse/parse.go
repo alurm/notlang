@@ -28,6 +28,7 @@ func GroupTop(in chan token.Token) chan token.Token {
 				out <- t
 			}
 		}
+		close(out)
 	}()
 	return out
 }
