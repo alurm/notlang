@@ -24,10 +24,14 @@ type (
 	Separator struct{}
 	Open      struct{}
 	Close     struct{}
-	Group     []Token // Tokenizing must not generate this token, but parser will.
-	Paste     []Token // Tokenizing must not generate this token, but parser will.
-	// Quote // Not a token, but a special character anyway.
-	// Backslash // Not a token, but a special character anyway.
+
+	// Special characters.
+	// Quote // '[Hello world] -> "Hello world"
+	// Backslash // \' -> "'"
+
+	// Tokenizing must not generate these tokens, but parser will.
+	Group     []Token // [1 2 3] -> token.Group{"1", "2", "3"}
+	Paste     []Token // 1'[2] -> token.Paste{"1", "2"}
 )
 
 func (String) token()    {}
