@@ -6,8 +6,9 @@ type (
 	Tree     interface{ tree() }
 	String   string    // echo
 	Command  []Tree    // echo hi
-	Block    []Command // $[echo hi; echo lol]
-	Function []Command // [echo hi; echo lol]
+	// Names from lambda calculus.
+	Abstraction []Command // [echo hi; echo lol]
+	Application []Command // $[echo hi; echo lol]
 )
 
 func (String) tree()   {}
