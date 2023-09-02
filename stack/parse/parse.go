@@ -71,30 +71,29 @@ Strings stick, dollars stick, groups stick.
 */
 func SpaceTop(in chan token.Token) chan token.Token {
 	out := make(chan token.Token)
-	var one token.Token
 	var paste token.Paste
 	go func() {
 		for t := range in {
 			switch t := t.(type) {
 			case token.Space:
-				if one == nil && paste == nil {
+				if paste == nil {
 					continue
 				}
-				if one != nil {
-					out <- one
-					one = nil
+				if len(paste) == 1 {
+					out <- paste[0]
+					paste = nil
 					continue
 				}
 				out <- paste
 				paste = nil
 			case token.Separator:
-				if one == nil && paste == nil {
+				if paste == nil {
 					out <- token.Separator{}
 					continue
 				}
-				if one != nil {
-					out <- one
-					one = nil
+				if len(paste) == 1 {
+					out <- paste[0]
+					paste = nil
 					out <- token.Separator{}
 					continue
 				}
@@ -103,26 +102,17 @@ func SpaceTop(in chan token.Token) chan token.Token {
 				out <- token.Separator{}
 			case token.Group:
 				// Ugly? Doesn't leave routine hanging at least?
-				out <- token.Group(Slice(SpaceTop(Chan(t))))
+				paste = append(paste, token.Group(Slice(SpaceTop(Chan(t)))))
 			default:
-				if one == nil && paste == nil {
-					one = t
-					continue
-				}
-				if one != nil {
-					paste = append(paste, one)
-					one = nil
-					paste = append(paste, t)
-					continue
-				}
 				paste = append(paste, t)
 			}
 		}
-		if one != nil {
-			out <- one
-		}
 		if paste != nil {
-			out <- paste
+			if len(paste) == 1 {
+				out <- paste[0]
+			} else {
+				out <- paste
+			}
 		}
 		close(out)
 	}()
