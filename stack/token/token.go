@@ -24,8 +24,8 @@ type (
 	Separator struct{}
 	Open      struct{}
 	Close     struct{}
-	Quote     struct{}
 	Group     []Token // Tokenizing must not generate this token, but parser will.
+	// Quote // Not a token, but a special character anyway.
 	// Backslash // Not a token, but a special character anyway.
 )
 
@@ -35,7 +35,6 @@ func (Space) token()     {}
 func (Separator) token() {}
 func (Open) token()      {}
 func (Close) token()     {}
-func (Quote) token()     {}
 func (Group) token()     {}
 
 func Tokenize(in chan byte) chan Token {
@@ -88,11 +87,46 @@ func Tokenize(in chan byte) chan Token {
 			case '$':
 				out <- Dollar{}
 			case '\'':
-				out <- Quote{}
+				// Restricted for now.
+				// Would be better to reuse and recurse tokenizer.
+				// Perhaps by changing its mode somehow.
+				var sb strings.Builder
+				var ok bool
+				var depth int
+				b, ok = <-in
+				if !ok || b != '[' {
+					panic(nil)
+				}
+				depth++
+			Quoted:
+				for {
+					b, ok = <-in
+					if !ok {
+						panic(nil)
+					}
+					switch b {
+					case '[':
+						depth++
+					case ']':
+						depth--
+						if depth == 0 {
+							break Quoted
+						}
+					case '\\':
+						b, ok = <-in
+						if !ok {
+							panic(nil)
+						}
+					}
+					sb.WriteByte(b)
+				}
+				out <- String(sb.String())
 			case '\\':
 				b, ok := <-in
 				if !ok {
-					out <- String("\\")
+					// Restricted for now.
+					panic(nil)
+					//out <- String("\\")
 				} else {
 					out <- String(b)
 				}
