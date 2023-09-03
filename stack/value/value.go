@@ -18,6 +18,7 @@ func Shell(in chan parse.Tree) chan Value {
 		for _ = range in {
 			out <- String("work in progress") /*Evaluate(t, nil)*/
 		}
+		close(out)
 	}()
 	return out
 }
