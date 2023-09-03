@@ -63,6 +63,6 @@ func Shell() {
 	values := value.Shell(tree)
 
 	for v := range values {
-		fmt.Printf("%#v\n", v)
+		fmt.Printf("%#v\n\n", v) // Fix me: want a real prompt.
 	}
 }
