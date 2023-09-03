@@ -16,19 +16,43 @@ func (Command) tree()     {}
 func (Abstraction) tree() {}
 func (Application) tree() {}
 
-/*func Parse(in chan token.Token) chan Tree {
+func Parse(in chan token.Token) chan Tree {
 	out := make(chan Tree)
 
 	go func() {
 		for t := range in {
 			switch t := t.(type) {
-			case
+			case token.String:
+				out <- String(t)
+			case token.Group:
+				var abstraction Abstraction
+				trees := wrapTopFunc(Parse, t)
+				for _, tree := range trees {
+					abstraction = append(abstraction, tree.(Command))
+				}
+				out <- abstraction
+			case token.Application:
+				var application Application
+				trees := wrapTopFunc(Parse, t)
+				for _, tree := range trees {
+					application = append(application, tree.(Command))
+				}
+				out <- application
+			case token.Command:
+				var command Command
+				trees := wrapTopFunc(Parse, t)
+				for _, tree := range trees {
+					command = append(command, tree)
+				}
+				out <- command
+			default:
+				panic(nil)
 			}
 		}
 		close(out)
 	}()
 	return out
-}*/
+}
 
 // Consumes all token.Dollar tokens.
 func ApplicationTop(in chan token.Token) chan token.Token {
@@ -101,10 +125,10 @@ func DollarStringAsGetCommandGroup(in chan token.Token) chan token.Token {
 // To-do: make this type safe, if possible.
 // Given token.Group, return token.Group.
 // Requires changes to topFuncs elsewhere probably.
-func wrapTopFunc(
-	topFunc func(chan token.Token) chan token.Token,
-	in []token.Token,
-) []token.Token {
+func wrapTopFunc[In, Out any](
+	topFunc func(chan In) chan Out,
+	in []In,
+) []Out {
 	return Slice(topFunc(Chan(in)))
 }
 

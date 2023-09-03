@@ -53,7 +53,13 @@ func Shell() {
 		parse.SpaceTop,
 	)
 
-	for t := range tokens {
+	/*for t := range tokens {
+		fmt.Printf("%#v\n", t)
+	}*/
+
+	tree := parse.Parse(tokens)
+
+	for t := range tree {
 		fmt.Printf("%#v\n", t)
 	}
 }
