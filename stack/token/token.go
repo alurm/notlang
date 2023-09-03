@@ -31,7 +31,6 @@ type (
 
 	// Tokenizing must not generate these tokens, but parser will.
 	Group []Token // [1 2 3] -> Group{"1", "2", "3"}, consume Opens and Closes
-	Paste []Token // 1'[2] -> Paste{"1", "2"}, consume Spaces
 	// 1 2; 3 4 -> Command{"1", "2"} Command{"3", "4"}, consume Separators
 	Command []Token
 )
@@ -44,7 +43,6 @@ func (Open) token()      {}
 func (Close) token()     {}
 
 func (Group) token()   {}
-func (Paste) token()   {}
 func (Command) token() {}
 
 func Tokenize(in chan byte) chan Token {

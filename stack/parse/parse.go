@@ -42,9 +42,14 @@ func CommandTop(in chan token.Token) chan token.Token {
 					out <- command
 					command = nil
 				}
+			case token.Group:
+				command = append(command, token.Group(Slice(CommandTop(Chan(t)))))
 			default:
 				command = append(command, t)
 			}
+		}
+		if command != nil {
+			out <- command
 		}
 		close(out)
 	}()
@@ -102,54 +107,41 @@ func Slice[T any](channel chan T) (out []T) {
 
 /*
 Consumes all token.Space tokens.
-Spaces separate, separators separate.
+Spaces separate, commands separate.
 Strings stick, dollars stick, groups stick.
 */
 func SpaceTop(in chan token.Token) chan token.Token {
 	out := make(chan token.Token)
+	send := func(out chan token.Token, paste *[]token.Token) {
+		if *paste != nil {
+			if len(*paste) == 1 {
+				out <- (*paste)[0]
+			} else {
+				out <- token.Dollar{}
+				command := token.Command{token.String("paste")}
+				command = append(command, (*paste)...)
+				out <- token.Group{command}
+			}
+			*paste = nil
+		}
+	}
 	go func() {
-		var paste token.Paste
+		var paste []token.Token
 		for t := range in {
 			switch t := t.(type) {
 			case token.Space:
-				if paste == nil {
-					continue
-				}
-				if len(paste) == 1 {
-					out <- paste[0]
-					paste = nil
-					continue
-				}
-				out <- paste
-				paste = nil
-			case token.Separator:
-				if paste == nil {
-					out <- token.Separator{}
-					continue
-				}
-				if len(paste) == 1 {
-					out <- paste[0]
-					paste = nil
-					out <- token.Separator{}
-					continue
-				}
-				out <- paste
-				paste = nil
-				out <- token.Separator{}
+				send(out, &paste)
 			case token.Group:
 				// Ugly? Doesn't leave routine hanging at least?
 				paste = append(paste, token.Group(Slice(SpaceTop(Chan(t)))))
+			case token.Command:
+				send(out, &paste)
+				out <- token.Command(Slice(SpaceTop(Chan(t))))
 			default:
 				paste = append(paste, t)
 			}
 		}
-		if paste != nil {
-			if len(paste) == 1 {
-				out <- paste[0]
-			} else {
-				out <- paste
-			}
-		}
+		send(out, &paste)
 		close(out)
 	}()
 	return out
