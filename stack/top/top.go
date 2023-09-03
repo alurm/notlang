@@ -7,6 +7,7 @@ import (
 
 	"git.sr.ht/~alurm/notlang/stack/parse"
 	"git.sr.ht/~alurm/notlang/stack/token"
+	"git.sr.ht/~alurm/notlang/stack/value"
 )
 
 func Chan[T any](slice []T) chan T {
@@ -59,7 +60,9 @@ func Shell() {
 
 	tree := parse.Parse(tokens)
 
-	for t := range tree {
-		fmt.Printf("%#v\n", t)
+	values := value.Shell(tree)
+
+	for v := range values {
+		fmt.Printf("%#v\n", v)
 	}
 }
