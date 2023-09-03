@@ -1,6 +1,7 @@
 package value
 
 import (
+	"os"
 	"fmt"
 	"strconv"
 
@@ -135,6 +136,13 @@ func Shell(in chan parse.Tree) chan Value {
 						Must(strconv.Atoi(string(args[1].(String)))),
 				))
 			},
+			"paste": func(c *Continuation, args []Value) Value {
+				var out String
+				for _, s := range args {
+					out += s.(String)
+				}
+				return out
+			},
 			"print": func(c *Continuation, args []Value) Value {
 				fmt.Println(args[0])
 				return nil
@@ -163,6 +171,14 @@ func Shell(in chan parse.Tree) chan Value {
 			"get": func(c *Continuation, args []Value) Value {
 				key := args[0].(String)
 				return *Lookup(c, key)
+			},
+			"env": func(c *Continuation, args[]Value) Value {
+				switch args[0].(String) {
+				case "get":
+					return String(os.Getenv(string(args[1].(String))))
+				default:
+					panic(nil)
+				}
 			},
 		}
 		names := map[String]*Value{}
