@@ -1,0 +1,25 @@
+let Counter [
+	let count 0
+	return [
+		set count $[+ $count 1]
+		return $count
+	]
+]
+
+let c $[Counter]
+
+print $[c]
+print $[c]
+print $[c]
+
+let c2 $c
+
+print $[c2]
+
+let c3 $[Counter]
+
+print '[]
+
+print $[c3]
+print $[c3]
+print $[c3]

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 
 	"git.sr.ht/~alurm/notlang/stack/parse"
 	"git.sr.ht/~alurm/notlang/stack/token"
@@ -23,7 +24,7 @@ func In(in string) chan byte {
 	return Chan([]byte(in))
 }
 
-func Shell() {
+func Shell(mode string) {
 	in := bufio.NewReader(os.Stdin)
 	out := make(chan byte)
 	tokens := token.Tokenize(out)
@@ -45,24 +46,44 @@ func Shell() {
 		return tokens
 	}
 
-	tokens = pipe(
-		tokens,
+	stages := []func(chan token.Token) chan token.Token{
 		parse.GroupTop,
 		parse.CommandTop,
 		parse.DollarStringAsGetCommandGroup,
 		parse.ApplicationTop,
 		parse.SpaceTop,
+	}
+	min := func(i, j int) int {
+		if i > j {
+			return j
+		}
+		return i
+	}
+	if i, err := strconv.Atoi(mode); err == nil {
+		stages = stages[:min(i, len(stages))]
+	}
+	tokens = pipe(
+		tokens,
+		stages...,
 	)
 
 	/*for t := range tokens {
 		fmt.Printf("%#v\n", t)
 	}*/
 
-	tree := parse.Parse(tokens)
+	if mode == "values" {
+		tree := parse.Parse(tokens)
 
-	values := value.Shell(tree)
+		values := value.Shell(tree)
 
-	for v := range values {
-		fmt.Printf("%#v\n\n", v) // Fix me: want a real prompt.
+		for v := range values {
+			if v != nil {
+				fmt.Printf("%#v\n\n", v) // Fix me: want a real prompt.
+			}
+		}
+	} else {
+		for v := range tokens {
+			fmt.Printf("%#v\n\n", v) // Fix me: want a real prompt.
+		}
 	}
 }

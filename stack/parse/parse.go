@@ -1,6 +1,8 @@
 package parse
 
-import "git.sr.ht/~alurm/notlang/stack/token"
+import (
+	"git.sr.ht/~alurm/notlang/stack/token"
+)
 
 type (
 	Tree    interface{ tree() }
@@ -66,7 +68,7 @@ func ApplicationTop(in chan token.Token) chan token.Token {
 					panic(nil)
 				}
 				group := t2.(token.Group)
-				out <- token.Application(group)
+				out <- token.Application(wrapTopFunc(ApplicationTop, group))
 			case token.Group:
 				out <- token.Group(wrapTopFunc(ApplicationTop, t))
 			case token.Command:
@@ -91,15 +93,31 @@ func DollarStringAsGetCommandGroup(in chan token.Token) chan token.Token {
 				if !ok {
 					panic(nil)
 				}
-				if str, ok := t2.(token.String); ok {
+				switch t2 := t2.(type) {
+				case token.String:
+					str := t2
 					out <- token.Dollar{}
 					out <- token.Group{
 						token.Command{
 							token.String("get"),
+							// Hack.
+							token.Space{},
 							str,
 						},
 					}
-				} else {
+				case token.Group:
+					out <- token.Dollar{}
+					out <- token.Group(wrapTopFunc(
+						DollarStringAsGetCommandGroup,
+						t2,
+					))
+				case token.Command:
+					out <- token.Dollar{}
+					out <- token.Command(wrapTopFunc(
+						DollarStringAsGetCommandGroup,
+						t2,
+					))
+				default:
 					out <- token.Dollar{}
 					out <- t2
 				}
@@ -141,6 +159,13 @@ func CommandTop(in chan token.Token) chan token.Token {
 			switch t := t.(type) {
 			case token.Separator:
 				if command != nil {
+					if len(command) == 1 {
+						_, ok := command[0].(token.Space)
+						if ok {
+							command = nil
+							continue
+						}
+					}
 					out <- command
 					command = nil
 				}
@@ -151,7 +176,14 @@ func CommandTop(in chan token.Token) chan token.Token {
 			}
 		}
 		if command != nil {
-			out <- command
+			if len(command) == 1 {
+				_, bad := command[0].(token.Space)
+				if !bad {
+					out <- command
+				}
+			} else {
+				out <- command
+			}
 		}
 		close(out)
 	}()
@@ -235,6 +267,8 @@ func SpaceTop(in chan token.Token) chan token.Token {
 			case token.Group:
 				// Ugly? Doesn't leave routine hanging at least?
 				paste = append(paste, token.Group(Slice(SpaceTop(Chan(t)))))
+			case token.Application:
+				paste = append(paste, token.Application(Slice(SpaceTop(Chan(t)))))
 			case token.Command:
 				send(out, &paste)
 				out <- token.Command(Slice(SpaceTop(Chan(t))))

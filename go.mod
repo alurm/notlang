@@ -1,3 +1,3 @@
 module git.sr.ht/~alurm/notlang
 
-go 1.18
+go 1.20

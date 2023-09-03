@@ -2,6 +2,7 @@ package value
 
 import (
 	"fmt"
+	"strconv"
 
 	"git.sr.ht/~alurm/notlang/stack/parse"
 )
@@ -9,22 +10,29 @@ import (
 type (
 	Value  interface{ value() }
 	String string
+	// Abstraction func(c *Continuation, args []Value, in chan Value) chan Value
+	// Abstraction func(c *Continuation, in chan Value) chan Value
+	/*
+		grep $[cat] foo
+		grep $[put foo; cat]
+	*/
 	// Maybe args and return type should be stored in the continuation.
-	Abstraction func(c *Continuation, args []Value) Value
+	Command func(c *Continuation, args []Value) Value
+	//Abstraction func(c *Continuation, args []Value) Value
 )
 
-func (String) value()      {}
-func (Abstraction) value() {}
+func (String) value()  {}
+func (Command) value() {}
 
 type Continuation struct {
 	Code   parse.Tree
-	Names  map[String]Value
+	Names  map[String]*Value
 	Up     *Continuation
-	Lookup func(c *Continuation, s String) Value
+	Lookup func(c *Continuation, s String) *Value
 }
 
 // Lookup of the lookup!
-func Lookup(c *Continuation, s String) Value {
+func Lookup(c *Continuation, s String) *Value {
 	lookup := c
 	for lookup.Lookup == nil {
 		lookup = lookup.Up
@@ -46,8 +54,9 @@ func Evaluate(c *Continuation) Value {
 		var command []Value
 		for _, loop := range code {
 			value := Evaluate(&Continuation{
-				Code: loop,
-				Up:   c,
+				Code:  loop,
+				Up:    c,
+				Names: map[String]*Value{},
 			})
 			command = append(command, value)
 		}
@@ -55,21 +64,45 @@ func Evaluate(c *Continuation) Value {
 		tail := command[1:]
 		switch head := head.(type) {
 		case String:
-			headValue := Lookup(c, head)
-			return headValue.(Abstraction)(c, tail)
+			headValue := *Lookup(c, head)
+			return headValue.(Command)(c, tail)
 			panic(nil)
-		case Abstraction:
+		case Command:
 			// Keep the same continuation?
 			return head(c, tail)
 		default:
 			panic(nil)
 		}
+	case parse.Application:
+		// Confused about this.
+		c := &Continuation{
+			Up:    c,
+			Names: map[String]*Value{},
+		}
+		var value Value
+		for _, cmd := range code {
+			c.Code = cmd
+			value = Evaluate(c)
+		}
+		return value
+	case parse.Abstraction:
+		// Confused about this. Where to put args?
+		return Command(func(_ *Continuation, args []Value) Value {
+			/*c := &Continuation{
+				Up:    c,
+				Names: map[String]*Value{},
+				Code: c.Code,
+			}*/
+			c.Code = parse.Application(code)
+			return Evaluate(c)
+		})
 	default:
 		panic(nil)
 	}
 }
 
-func DefaultLookup(c *Continuation, s String) (out Value) {
+func DefaultLookup(c *Continuation, s String) *Value {
+	var out *Value
 	for c != nil {
 		out = c.Names[s]
 		if out != nil {
@@ -80,41 +113,66 @@ func DefaultLookup(c *Continuation, s String) (out Value) {
 	panic(nil)
 }
 
+func Ptr[T any](v T) *T { return &v }
+
+func Must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func Shell(in chan parse.Tree) chan Value {
 	out := make(chan Value)
 	go func() {
+		funcs := map[String]Command{
+			"return": func(c *Continuation, args []Value) Value {
+				return args[0]
+			},
+			"+": func(c *Continuation, args []Value) Value {
+				return String(strconv.Itoa(
+					Must(strconv.Atoi(string(args[0].(String)))) +
+						Must(strconv.Atoi(string(args[1].(String)))),
+				))
+			},
+			"print": func(c *Continuation, args []Value) Value {
+				fmt.Println(args[0])
+				return nil
+			},
+			"foo": func(c *Continuation, args []Value) Value {
+				return String("bar")
+			},
+			"set": func(c *Continuation, args []Value) Value {
+				key := args[0].(String)
+				value := args[1]
+				*Lookup(c, key) = value
+				return nil
+			},
+			"let": func(c *Continuation, args []Value) Value {
+				key := args[0].(String)
+				value := args[1]
+				c.Names[key] = &value
+				return nil
+			},
+			"names": func(c *Continuation, args []Value) Value {
+				for name := range c.Names {
+					fmt.Println(name)
+				}
+				return nil
+			},
+			"get": func(c *Continuation, args []Value) Value {
+				key := args[0].(String)
+				return *Lookup(c, key)
+			},
+		}
+		names := map[String]*Value{}
+		for k, v := range funcs {
+			v := v
+			names[k] = Ptr(Value(v))
+		}
 		topContinuation := Continuation{
 			Lookup: DefaultLookup,
-			Names: map[String]Value{
-				"foo": Abstraction(
-					func(c *Continuation, args []Value) Value {
-						return String("bar")
-					},
-				),
-				"let": Abstraction(
-					func(c *Continuation, args []Value) Value {
-						key := args[0].(String)
-						value := args[1]
-						c.Names[key] = value
-						return nil
-					},
-				),
-				"names": Abstraction(
-					func(c *Continuation, args []Value) Value {
-						for name := range c.Names {
-							fmt.Println(name)
-						}
-						return nil
-					},
-				),
-				"get": Abstraction(
-					func(c *Continuation, args []Value) Value {
-						// Fix me: do a proper Lookup.
-						key := args[0].(String)
-						return c.Names[key]
-					},
-				),
-			},
+			Names:  names,
 		}
 
 		for tree := range in {

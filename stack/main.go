@@ -1,7 +1,15 @@
 package main
 
-import "git.sr.ht/~alurm/notlang/stack/top"
+import (
+	"os"
+
+	"git.sr.ht/~alurm/notlang/stack/top"
+)
 
 func main() {
-	top.Shell()
+	mode := "values"
+	if len(os.Args) >= 2 {
+		mode = os.Args[1]
+	}
+	top.Shell(mode)
 }
