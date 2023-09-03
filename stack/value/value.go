@@ -1,9 +1,11 @@
 package value
 
 import (
-	"os"
 	"fmt"
+	"os"
+	"os/exec"
 	"strconv"
+	"strings"
 
 	"git.sr.ht/~alurm/notlang/stack/parse"
 )
@@ -126,7 +128,8 @@ func Must[T any](v T, err error) T {
 func Shell(in chan parse.Tree) chan Value {
 	out := make(chan Value)
 	go func() {
-		funcs := map[String]Command{
+		var funcs map[String]Command
+		funcs = map[String]Command{
 			"return": func(c *Continuation, args []Value) Value {
 				return args[0]
 			},
@@ -144,7 +147,7 @@ func Shell(in chan parse.Tree) chan Value {
 				return out
 			},
 			"print": func(c *Continuation, args []Value) Value {
-				fmt.Println(args[0])
+				fmt.Println(Print(args[0]))
 				return nil
 			},
 			"foo": func(c *Continuation, args []Value) Value {
@@ -163,8 +166,61 @@ func Shell(in chan parse.Tree) chan Value {
 				return nil
 			},
 			"names": func(c *Continuation, args []Value) Value {
-				for name := range c.Names {
-					fmt.Println(name)
+				var names []Value
+				var curr = c
+				for curr != nil {
+					for name := range curr.Names {
+						names = append(names, name)
+					}
+					curr = curr.Up
+				}
+				return funcs["list"](c, names)
+			},
+			"unix": func(c *Continuation, args []Value) Value {
+				var strs []string
+				for _, v := range args {
+					strs = append(strs, string(v.(String)))
+				}
+				cmd := exec.Command(strs[0], strs[1:]...)
+				var out strings.Builder
+				cmd.Stdout = &out
+				err := cmd.Run()
+				if err != nil {
+					panic(err)
+				}
+				return String(out.String())
+			},
+			"lines": func(c *Continuation, args []Value) Value {
+				str := string(args[0].(String))
+				if str[len(str)-1] != '\n' {
+					panic(nil)
+				}
+				var strs = strings.Split(str, "\n")
+				strs = strs[:len(strs)-1]
+				var values []Value
+				for _, v := range strs {
+					values = append(values, String(v))
+				}
+				return funcs["list"](c, values)
+			},
+			"list": func(c *Continuation, args []Value) Value {
+				return Command(func(c *Continuation, args2 []Value) Value {
+					if args2[0].(String) == "size" {
+						return String(strconv.Itoa(len(args)))
+					}
+					i := Must(strconv.Atoi(string(args2[0].(String))))
+					return args[i]
+				})
+			},
+			"print-list": func(c *Continuation, args []Value) Value {
+				list := args[0].(Command)
+				size := Must(strconv.Atoi(string(list(c, []Value{String("size")}).(String))))
+				for i := 0; i < size; i++ {
+					e := list(
+						c,
+						[]Value{String(strconv.Itoa(i))},
+					)
+					funcs["print"](c, []Value{e})
 				}
 				return nil
 			},
@@ -172,7 +228,7 @@ func Shell(in chan parse.Tree) chan Value {
 				key := args[0].(String)
 				return *Lookup(c, key)
 			},
-			"env": func(c *Continuation, args[]Value) Value {
+			"env": func(c *Continuation, args []Value) Value {
 				switch args[0].(String) {
 				case "get":
 					return String(os.Getenv(string(args[1].(String))))
@@ -198,4 +254,15 @@ func Shell(in chan parse.Tree) chan Value {
 		close(out)
 	}()
 	return out
+}
+
+func Print(v Value) string {
+	switch v := v.(type) {
+	case String:
+		return string(v)
+	case Command:
+		return fmt.Sprint(v)
+	default:
+		panic(nil)
+	}
 }

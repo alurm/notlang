@@ -1,0 +1,75 @@
+names
+0xb28e97744c90
+
+print-list $[names]
++
+env
+names
+get
+list
+foo
+paste
+unix
+return
+set
+let
+lines
+print-list
+print
+
+unix ls
+counter.notlang
+main.go
+parse
+stack
+token
+token_test
+top
+value
+
+
+let out $[lines $[unix ls]]
+
+print-list $out
+counter.notlang
+main.go
+parse
+stack
+token
+token_test
+top
+value
+
+out size
+8
+
+out 0
+counter.notlang
+
+out 7
+value
+
+unix ls $[out 7]
+value.go
+
+
+let Counter [
+        let count 0
+        return [
+                set count $[+ $count 1]
+                return $count
+        ]
+]
+
+let c $[Counter]
+
+c
+1
+
+c
+2
+
+let c2 $[Counter]
+
+c2
+1

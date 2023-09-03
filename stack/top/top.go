@@ -78,8 +78,9 @@ func Shell(mode string) {
 
 		for v := range values {
 			if v != nil {
-				fmt.Printf("%#v\n\n", v) // Fix me: want a real prompt.
+				fmt.Printf("%s\n", value.Print(v)) // Fix me: want a real prompt.
 			}
+			fmt.Println()
 		}
 	} else {
 		for v := range tokens {
