@@ -30,6 +30,84 @@ func (Application) tree() {}
 	return out
 }*/
 
+// Consumes all token.Dollar tokens.
+func ApplicationTop(in chan token.Token) chan token.Token {
+	out := make(chan token.Token)
+	go func() {
+		for t := range in {
+			switch t := t.(type) {
+			case token.Dollar:
+				t2, ok := <-in
+				if !ok {
+					panic(nil)
+				}
+				group := t2.(token.Group)
+				out <- token.Application(group)
+			case token.Group:
+				out <- token.Group(wrapTopFunc(ApplicationTop, t))
+			case token.Command:
+				out <- token.Command(wrapTopFunc(ApplicationTop, t))
+			default:
+				out <- t
+			}
+		}
+		close(out)
+	}()
+	return out
+}
+
+// Rewrites $foo to $[get foo]
+func DollarStringAsGetCommandGroup(in chan token.Token) chan token.Token {
+	out := make(chan token.Token)
+	go func() {
+		for t := range in {
+			switch t := t.(type) {
+			case token.Dollar:
+				t2, ok := <-in
+				if !ok {
+					panic(nil)
+				}
+				if str, ok := t2.(token.String); ok {
+					out <- token.Dollar{}
+					out <- token.Group{
+						token.Command{
+							token.String("get"),
+							str,
+						},
+					}
+				} else {
+					out <- token.Dollar{}
+					out <- t2
+				}
+			case token.Group:
+				out <- token.Group(wrapTopFunc(
+					DollarStringAsGetCommandGroup,
+					t,
+				))
+			case token.Command:
+				out <- token.Command(wrapTopFunc(
+					DollarStringAsGetCommandGroup,
+					t,
+				))
+			default:
+				out <- t
+			}
+		}
+		close(out)
+	}()
+	return out
+}
+
+// To-do: make this type safe, if possible.
+// Given token.Group, return token.Group.
+// Requires changes to topFuncs elsewhere probably.
+func wrapTopFunc(
+	topFunc func(chan token.Token) chan token.Token,
+	in []token.Token,
+) []token.Token {
+	return Slice(topFunc(Chan(in)))
+}
+
 // Consumes all token.Separator tokens.
 func CommandTop(in chan token.Token) chan token.Token {
 	out := make(chan token.Token)
@@ -117,10 +195,9 @@ func SpaceTop(in chan token.Token) chan token.Token {
 			if len(*paste) == 1 {
 				out <- (*paste)[0]
 			} else {
-				out <- token.Dollar{}
 				command := token.Command{token.String("paste")}
 				command = append(command, (*paste)...)
-				out <- token.Group{command}
+				out <- token.Application{command}
 			}
 			*paste = nil
 		}

@@ -48,6 +48,8 @@ func Shell() {
 		tokens,
 		parse.GroupTop,
 		parse.CommandTop,
+		parse.DollarStringAsGetCommandGroup,
+		parse.ApplicationTop,
 		parse.SpaceTop,
 	)
 

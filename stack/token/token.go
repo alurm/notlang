@@ -31,6 +31,12 @@ type (
 
 	// Tokenizing must not generate these tokens, but parser will.
 	Group []Token // [1 2 3] -> Group{"1", "2", "3"}, consume Opens and Closes
+	// $foo
+	// Dollar Open foo Close
+	// Dollar Group
+	// Abstraction
+	// Needed so SpaceTop doesn't treat Dollar and Group as separate.
+	Application []Token
 	// 1 2; 3 4 -> Command{"1", "2"} Command{"3", "4"}, consume Separators
 	Command []Token
 )
@@ -42,8 +48,9 @@ func (Separator) token() {}
 func (Open) token()      {}
 func (Close) token()     {}
 
-func (Group) token()   {}
-func (Command) token() {}
+func (Group) token()       {}
+func (Command) token()     {}
+func (Application) token() {}
 
 func Tokenize(in chan byte) chan Token {
 	// in := bufio.NewReader(r)
