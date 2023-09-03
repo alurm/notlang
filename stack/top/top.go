@@ -37,7 +37,21 @@ func Shell() {
 		}
 	}()
 
-	for t := range parse.SpaceTop( parse.CommandTop (parse.GroupTop(tokens))) {
+	pipe := func(tokens chan token.Token, filters ...func(chan token.Token) chan token.Token) chan token.Token {
+		for _, filter := range filters {
+			tokens = filter(tokens)
+		}
+		return tokens
+	}
+
+	tokens = pipe(
+		tokens,
+		parse.GroupTop,
+		parse.CommandTop,
+		parse.SpaceTop,
+	)
+
+	for t := range tokens {
 		fmt.Printf("%#v\n", t)
 	}
 }
