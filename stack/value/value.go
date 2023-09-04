@@ -32,6 +32,8 @@ type Continuation struct {
 	Names  map[String]*Value
 	Up     *Continuation
 	Lookup func(c *Continuation, s String) *Value
+	// Not sure about this.
+	Args *[]Value
 }
 
 // Lookup of the lookup!
@@ -91,6 +93,7 @@ func Evaluate(c *Continuation) Value {
 	case parse.Abstraction:
 		// Confused about this. Where to put args?
 		return Command(func(_ *Continuation, args []Value) Value {
+			c.Args = &args
 			/*c := &Continuation{
 				Up:    c,
 				Names: map[String]*Value{},
@@ -132,6 +135,56 @@ func Shell(in chan parse.Tree) chan Value {
 		funcs = map[String]Command{
 			"return": func(c *Continuation, args []Value) Value {
 				return args[0]
+			},
+			"args": func(c *Continuation, args []Value) Value {
+				curr := c
+				for curr != nil {
+					if curr.Args != nil {
+						return funcs["list"](
+							c,
+							*(curr.Args),
+						)
+					}
+					curr = curr.Up
+				}
+				panic(nil)
+			},
+			// Crazy code.
+			"upcall": func(c *Continuation, args []Value) Value {
+				levelstr := string(args[0].(String))
+				args = args[1:]
+				head := args[0].(Command)
+				//look := *Lookup(c, head.(String))
+				list := args[1].(Command)
+				var tail []Value
+				sizeval := list(c, []Value{String("size")})
+				sizestr := string(sizeval.(String))
+				size := Must(strconv.Atoi(sizestr))
+				for i := 0; i < size; i++ {
+					istr := String(strconv.Itoa(i))
+					v := list(c, []Value{istr})
+					tail = append(tail, v)
+				}
+				level := Must(strconv.Atoi(levelstr))
+				for i := 0; (i < level || level < 0) && c.Up != nil; i++ {
+					c = c.Up
+				}
+				return head(c, tail)
+			},
+			"call": func(c *Continuation, args []Value) Value {
+				head := args[0].(Command)
+				//look := *Lookup(c, head.(String))
+				list := args[1].(Command)
+				var tail []Value
+				sizeval := list(c, []Value{String("size")})
+				sizestr := string(sizeval.(String))
+				size := Must(strconv.Atoi(sizestr))
+				for i := 0; i < size; i++ {
+					istr := String(strconv.Itoa(i))
+					v := list(c, []Value{istr})
+					tail = append(tail, v)
+				}
+				return head(c, tail)
 			},
 			"+": func(c *Continuation, args []Value) Value {
 				return String(strconv.Itoa(

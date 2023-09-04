@@ -1,0 +1,17 @@
+let old-let $let
+
+set let [
+        print '[warning: side effects are evil]
+        upcall 2 $old-let $[args]
+]
+
+let old-print $print
+
+set print [
+	old-print '[I told you!]
+	call $old-print $[args]
+]
+
+let baz quux
+
+print $baz
