@@ -1,0 +1,49 @@
+hello world
+let foo 3
++ $[+ 3 4] 5 # 12
+seq [let foo bar] [let bar baz]
+[
+	do
+	[let foo bar]
+	[let bar baz]
+]
+do[
+	let foo bar
+	let bar baz
+	+ $foo $bar
+]
+do[let foo bar; let bar baz; + $foo $bar]
+$[ls]
+$[let foo bar; let bar baz; + $foo $bar]
+[do [let foo bar] [let bar baz] [+ $foo $bar]]
+$[let foo bar; let]
+$[
+	let foo bar
+	let bar baz
+]
+$[
+	+
+	3
+	4
+]
+$do[
+	+ 3 4
+]
+$do[< in; >> out; echo hello world]
+$do[< in; >> out; unix grep foo]
+$unix[do < in; do >> out; grep foo]
+grep foo;< in;>> out
+grep foo < in >> out
+grep foo < in >> out
+unix[grep foo; < in; >> out]
+pipe[git status; tr '[[:lower]] '[[:upper]]]
+lookup unix
+[
+	thread[
+		double
+		-1
+		do[let x $[args 0]; + get[x] get[x]]
+	]
+	3
+]
+ls
