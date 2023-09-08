@@ -25,8 +25,8 @@ type Stack struct {
 	Command []Value
 	Code    code.Code
 	Args    []Value
-
-	Depth int // Debug.
+	// Set to 0 in closures to indicate where to stop.
+	Depth int
 }
 
 func (String) value()  {}
@@ -45,12 +45,11 @@ func Lookup(stack *Stack, v Value) Value {
 	}
 }
 
-func Evaluate(in Stack) Value {
-	stack := &in
+func Evaluate(stack *Stack) Value {
 	for {
 		switch c := stack.Code.(type) {
 		case code.String:
-			if stack.Up == nil {
+			if stack.Depth == 0 {
 				return String(c)
 			}
 			stack = stack.Up
@@ -58,19 +57,28 @@ func Evaluate(in Stack) Value {
 			stack.Pointer++
 
 		case code.Command:
-			if stack.Pointer == 0 { // Head.
+			/*if stack.Pointer == 0 { // Head.
 				lookup := Lookup(stack, String(c[0].(code.String))).(Command)
 				stack.Command = append(stack.Command, lookup)
 				stack.Pointer++
-			}
+			}*/
 
 			if stack.Pointer == len(c) { // Off by one.
-				command := stack.Command[0].(Command)
+				var command Command
+				switch head := stack.Command[0].(type) {
+				case String:
+					command = Lookup(stack, head).(Command)
+				case Command:
+					command = head
+				default:
+					panic(nil)
+				}
 				value := command(Stack{
-					Up:   stack,
-					Args: stack.Command[1:],
+					Up:    stack,
+					Args:  stack.Command[1:],
+					Depth: stack.Depth + 1,
 				})
-				if stack.Up == nil {
+				if stack.Depth == 0 {
 					return value
 				}
 				stack = stack.Up
@@ -78,21 +86,25 @@ func Evaluate(in Stack) Value {
 				stack.Pointer++
 			} else { // Needs further processing.
 				stack = &Stack{
-					Up:   stack,
-					Code: c[stack.Pointer],
+					Up:    stack,
+					Code:  c[stack.Pointer],
+					Depth: stack.Depth + 1,
 				}
 			}
 
 		case code.Closure:
 			// Shouldn't proceed evaluation, instead returning a thunk.
 
+			// Is copy needed?
 			copy := *stack
+			copy.Code = code.Command(c)
+			copy.Depth = 0
 
 			closure := Command(func(forArgs Stack) Value {
-				return Evaluate(copy)
+				return Evaluate(&copy)
 			})
 
-			if stack.Up == nil {
+			if stack.Depth == 0 {
 				return closure
 			}
 			stack = stack.Up
@@ -103,6 +115,18 @@ func Evaluate(in Stack) Value {
 			panic(nil)
 		}
 	}
+}
+
+func PrintFrame(c Stack) {
+	fmt.Printf(
+		"# Frame:\n\nUp: %#v\n\nLookup: %#v\n\nCommand: %#v\n\nPointer: %#v\n\nCode: %#v\n\nArgs: %#v\n\n",
+		c.Up,
+		c.Lookup,
+		c.Command,
+		c.Pointer,
+		c.Code,
+		c.Args,
+	)
 }
 
 func main() {
@@ -132,7 +156,8 @@ func main() {
 		var commands map[String]Command
 		commands = map[String]Command{
 			"hello": func(Stack) Value {
-				return String("Hello, world")
+				fmt.Print("Hello, world")
+				return String("")
 			},
 			"get": func(s Stack) Value {
 				return Lookup(&s, s.Args[0])
@@ -161,33 +186,72 @@ func main() {
 					return String("")
 				}
 			},
-			// Doesn't work :(
-			// $[if true [print hi] [print bye]]
 			"if": func(s Stack) Value {
 				args := s.Args
 				cond := args[0]
 				then_ := args[1].(Command)
 				else_ := args[2].(Command)
 				if cond.(String) != "" {
-					return then_(Stack{Up: &s})
+					return then_(Stack{Up: &s, Depth: s.Depth + 1})
 				} else {
-					return else_(Stack{Up: &s})
+					return else_(Stack{Up: &s, Depth: s.Depth + 1})
 				}
+			},
+			"empty": func(s Stack) Value {
+				return String("")
+			},
+			/* Doesn't work properly.
+			$[let double [+ $[arg 0] $[arg 0]]]
+
+			$[double 20]
+			40
+
+			$[double 10]
+			40 # Mistake.
+			*/
+			"arg": func(s Stack) Value {
+				// Confusing.
+				// Wanted to use s.Up.Args but need to use s.Up.Command[1:]?
+				// s.Up.Up because $[arg x] creates a frame as well.
+
+				// Should find nearest frame with Depth = 0 probably.
+
+				n, err := strconv.Atoi(string(s.Args[0].(String)))
+				if err != nil {
+					panic(err)
+				}
+				/*for c := &s; c != nil; c = c.Up {
+					PrintFrame(*c)
+				}*/
+				/*for _, v := range s.Up.Args {
+					fmt.Println("arg:", Print(v))
+				}*/
+				/*cmd := s.Up.Command
+				for _, v := range cmd[1:] {
+					fmt.Println("cmd:", Print(v))
+				}*/
+				var curr = &s
+				for ; curr.Depth != 0; curr = curr.Up { // Call to arg.
+				}
+				curr = curr.Up
+				for ; curr.Depth != 0; curr = curr.Up { // Real call.
+				}
+				return curr.Command[n+1]
+				return s.Up.Up.Command[n+1]
 			},
 			"let": func(s Stack) Value { // Doesn't work :(
 				key := s.Args[0].(String)
-				fmt.Println("Key:", key)
 				value := s.Args[1]
-				up := s
+				up := s.Up
+				prev := up.Lookup
 				up.Lookup = func(v Value) Value {
-					return commands["hello"]
 					str, ok := v.(String)
 					if !ok || str != key {
-						return up.Lookup(v)
+						return prev(v)
 					}
 					return value
 				}
-				return String("")
+				return nil
 			},
 			"print": func(s Stack) Value {
 				fmt.Print(s.Args[0])
@@ -196,14 +260,7 @@ func main() {
 			"stack": func(s Stack) Value {
 				c := &s
 				for c != nil {
-					fmt.Printf(
-						"Up: %#v\n\nLookup: %#v\n\nPointer: %#v\n\nCode: %#v\n\nArgs: %#v\n\n",
-						c.Up,
-						c.Lookup,
-						c.Pointer,
-						c.Code,
-						c.Args,
-					)
+					PrintFrame(*c)
 					c = c.Up
 				}
 				return String("")
@@ -219,11 +276,31 @@ func main() {
 				}
 				return command
 			},
+			Depth: 0,
 		}
 
 		for code := range parse.Parse(parse.DollarThem(parse.GroupThem(tokens))) {
-			frame.Code = code
-			fmt.Printf("%s\n\n", Print(Evaluate(frame)))
+			func() {
+				defer func() {
+					/*err := recover()
+					if err != nil {
+						fmt.Println(err)
+					}*/
+				}()
+				// Ugly.
+				frame.Pointer = 0
+				frame.Command = nil
+				frame.Code = code
+				frame.Args = nil
+				frame.Depth = 0
+				// Pass by pointer so let works.
+				v := Evaluate(&frame)
+				if v == nil {
+					fmt.Println()
+				} else {
+					fmt.Printf("%s\n\n", Print(v))
+				}
+			}()
 		}
 	}
 }
