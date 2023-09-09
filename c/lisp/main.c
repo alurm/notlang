@@ -73,7 +73,7 @@ token_list *tokenize(char *source) {
 			break;
 		case 0:
 			return result;
-		default:
+		default: {
 			string s = {0};
 			for (;;) {
 				char c = *source;
@@ -93,7 +93,8 @@ token_list *tokenize(char *source) {
 					source++;
 				}
 			}
-		string_is_read:
+		string_is_read: ;
+		}
 		}
 	}
 }
@@ -132,11 +133,12 @@ struct parse parse_list(token_list *in) {
 				value: (value){ type: type_list, list: out },
 				next: in->next,
 			};
-		case token_open:
+		case token_open: {
 			struct parse p = parse_list(in->next);
 			in = p.next;
 			push_value(&out, p.value);
 			break;
+		}
 		case token_string:
 			push_value(&out, (value){
 				type: type_string,
@@ -172,7 +174,7 @@ list *reverse_list(list *in) {
 		case type_string:
 			push_value(&out, in->value);
 			break;
-		case type_list:
+		case type_list: {
 			list *under = reverse_list(in->value.list);
 			push_value(
 				&out,
@@ -182,6 +184,7 @@ list *reverse_list(list *in) {
 				}
 			);
 			break;
+		}
 		default:
 			assert(0);
 		}
@@ -196,10 +199,11 @@ struct parse parse(token_list *in) {
 		switch (in->value.type) {
 		case token_close:
 			assert(0);
-		case token_open:
+		case token_open: {
 			struct parse p = parse_list(in->next);
 			p.value.list = reverse_list(p.value.list);
 			return p;
+		}
 		case token_string:
 			return (struct parse){
 				value: (value){ type: type_string, string: in->value.string },
@@ -230,7 +234,7 @@ void print_value_depth(value v, int depth) {
 		print_string(v.string);
 		printf("\n");
 		break;
-	case type_list:
+	case type_list: {
 		list *current = v.list;
 		tab(depth); printf("(\n");
 		for (; current != 0; current = current->next) {
@@ -238,6 +242,7 @@ void print_value_depth(value v, int depth) {
 		}
 		tab(depth); printf(")\n");
 		break;
+	}
 	default:
 		assert(0);
 	};
@@ -301,18 +306,20 @@ value evaluate(value form, environment *e) {
 			}
 		}
 		assert(0);
-	case type_list:
+	case type_list: {
 		list *l = form.list;
 		assert(l);
 		value head = l->value;
 		list *tail = l->next;
 		assert(0);
 	}
+	default:
+		assert(0);
+	}
 }
 
-value apply(list *l) {
-
-}
+//value apply(list *l) {
+//}
 
 void argv(int argc, char **argv) {
 	assert(argc == 2);
