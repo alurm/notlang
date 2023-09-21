@@ -6,7 +6,7 @@ Minimal syntax:
 */
 package parse
 
-import "git.sr.ht/~alurm/notlang/stack2/code"
+import "git.sr.ht/~alurm/notlang/v3/code"
 
 type (
 	Token  interface{ token() }

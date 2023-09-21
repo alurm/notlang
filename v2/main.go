@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"git.sr.ht/~alurm/notlang/stack/top"
+	"git.sr.ht/~alurm/notlang/v2/top"
 )
 
 func main() {

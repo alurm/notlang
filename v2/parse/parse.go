@@ -1,7 +1,7 @@
 package parse
 
 import (
-	"git.sr.ht/~alurm/notlang/stack/token"
+	"git.sr.ht/~alurm/notlang/v2/token"
 )
 
 type (

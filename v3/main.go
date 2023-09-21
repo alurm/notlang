@@ -6,8 +6,8 @@ import (
 	"os"
 	"strconv"
 
-	"git.sr.ht/~alurm/notlang/stack2/code"
-	"git.sr.ht/~alurm/notlang/stack2/parse"
+	"git.sr.ht/~alurm/notlang/v3/code"
+	"git.sr.ht/~alurm/notlang/v3/parse"
 )
 
 type (

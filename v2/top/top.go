@@ -6,9 +6,9 @@ import (
 	"os"
 	"strconv"
 
-	"git.sr.ht/~alurm/notlang/stack/parse"
-	"git.sr.ht/~alurm/notlang/stack/token"
-	"git.sr.ht/~alurm/notlang/stack/value"
+	"git.sr.ht/~alurm/notlang/v2/parse"
+	"git.sr.ht/~alurm/notlang/v2/token"
+	"git.sr.ht/~alurm/notlang/v2/value"
 )
 
 func Chan[T any](slice []T) chan T {

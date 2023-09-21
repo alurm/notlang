@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"git.sr.ht/~alurm/notlang/stack/parse"
+	"git.sr.ht/~alurm/notlang/v2/parse"
 )
 
 type (
