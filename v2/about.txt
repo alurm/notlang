@@ -1,0 +1,23 @@
+Build by typing:
+
+	go build
+
+Launch shell by typing:
+
+	./notlang
+
+For a list of available functions, type:
+
+	print-list $[names]
+
+To run an external command, type (for example):
+
+	unix ls
+
+Run an example by typing:
+
+	cat counter.notlang | ./notlang
+
+Or type it literally in a shell.
+
+Exit the shell by sending end of file signal.
