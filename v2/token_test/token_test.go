@@ -3,8 +3,8 @@ package token_test
 import (
 	"testing"
 
-	"git.sr.ht/~alurm/notlang/stack/token"
-	"git.sr.ht/~alurm/notlang/stack/top"
+	"git.sr.ht/~alurm/notlang/v2/token"
+	"git.sr.ht/~alurm/notlang/v2/top"
 )
 
 func makeChan[T any](slice []T) chan T {
