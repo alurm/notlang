@@ -6,6 +6,8 @@ Launch shell by typing:
 
 	./notlang
 
+Example of a shell session lies in the file "session".
+
 For a list of available functions, type:
 
 	print-list $[names]
