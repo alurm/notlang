@@ -1,5 +1,0 @@
-Notlang programming language
-
-The most advanced version is located at v2 directory.
-
-Check out v2/about.txt
